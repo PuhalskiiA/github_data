@@ -1,11 +1,12 @@
 import logging
+import random
 from github import Github
 
 # Хранилище данных о репозиториях
 repositories_data = []
 
 # Ваш GitHub токен
-GITHUB_TOKEN = "token"
+GITHUB_TOKEN = "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"
 
 # Инициализация клиента GitHub
 git = Github(GITHUB_TOKEN)
@@ -23,7 +24,7 @@ def fetch_repositories():
     for i in range(get_request_count(MAX_REPOS)):
         # Вычитываем страницы (1 страница содержит 100 репозиториев)
         repos = git.search_repositories(
-            query="stars:>1",
+            query=generate_random_stars_range(),
             sort="stars",
             order="desc"
         )
@@ -48,6 +49,13 @@ def fetch_repositories():
 
 def get_request_count(__x: int):
     return MAX_REPOS // 100 if MAX_REPOS % 100 == 0 else MAX_REPOS // 100 + 1
+
+
+def generate_random_stars_range():
+    start = random.randint(0, 1000)
+    end = start + random.randint(50, 500)
+
+    return f"stars:{start}..{end}"
 
 
 # Подсчет строк кода в репозитории
