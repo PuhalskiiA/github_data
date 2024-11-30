@@ -30,16 +30,17 @@ class App:
         self.db = db
         self.fetcher = fetcher
 
-    async def fetch_and_save_page(self) -> None:
-        infos = await self.fetcher.fetch_repos_page()
+    async def fetch_and_save_page(self, page: int) -> None:
+        infos = await self.fetcher.fetch_repos_page(page)
         await self.db.add_repo_info(infos)
 
         if DEBUG:
             for info in infos:
                 logging.info(f"Сохранен репозиторий {info}")
 
-    async def fetch_and_save_pages(self) -> None:
-        result_tasks = [self.fetch_and_save_page() for _ in range(get_request_count())]
+    async def fetch_and_save_pages(self, pages: int) -> None:
+        pages = min(pages, get_request_count())
+        result_tasks = [self.fetch_and_save_page(page + 1) for page in range(pages)]
         await asyncio.gather(*result_tasks)
 
 
@@ -60,7 +61,7 @@ async def main() -> None:
     gh_fetcher = GHFetcher(GITHUB_TOKEN)
 
     app = App(db, gh_fetcher)
-    await app.fetch_and_save_pages()
+    await app.fetch_and_save_pages(3)
 
 
 if __name__ == "__main__":
