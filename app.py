@@ -56,7 +56,7 @@ def fetch_repositories():
                 logging.info(f'Ошибка при обработке {repo.full_name}: {e}')
 
 
-def get_request_count(__x: int):
+def get_request_count():
     return MAX_REPOS // 100 if MAX_REPOS % 100 == 0 else MAX_REPOS // 100 + 1
 
 
