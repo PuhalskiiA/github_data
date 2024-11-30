@@ -1,25 +1,16 @@
 import logging
 import asyncio
-from datetime import datetime
-
-# import random
 
 from pydantic import BaseModel
 import httpx
 
+from db import RepoInfo
 
 # Ваш GitHub токен
 GITHUB_TOKEN = "token"
 
 # Количество репозиториев для обработки
 MAX_REPOS = 200
-
-
-class RepoInfo(BaseModel):
-    full_name: str
-    language: str | None
-    created_at: datetime
-    pushed_at: datetime
 
 
 class SearchResult(BaseModel):
