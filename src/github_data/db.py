@@ -3,9 +3,6 @@ from datetime import datetime
 from sqlmodel import SQLModel, Field
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-DB_NAME = "data.db"
-DB_URL = f"sqlite+aiosqlite:///./{DB_NAME}"
-
 
 class RepoInfo(SQLModel, table=True):
     id: int = Field(primary_key=True)
@@ -16,8 +13,8 @@ class RepoInfo(SQLModel, table=True):
 
 
 class DataBase:
-    def __init__(self):
-        self.engine = create_async_engine("sqlite+aiosqlite://", echo=False)
+    def __init__(self, db_url: str):
+        self.engine = create_async_engine(db_url, echo=False)
         self.session = async_sessionmaker(self.engine, expire_on_commit=False)
 
     async def init(self) -> None:
@@ -27,4 +24,6 @@ class DataBase:
     async def add_repo_info(self, infos: list[RepoInfo]) -> None:
         async with self.session() as session:
             async with session.begin():
+                infos = [RepoInfo.validate(info) for info in infos]
                 session.add_all(infos)
+                await session.commit()

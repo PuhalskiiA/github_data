@@ -4,6 +4,10 @@ import asyncio
 from db import DataBase
 from gh_fetcher import GHFetcher
 
+# Хранилище
+DB_NAME = "data.db"
+DB_URL = f"sqlite+aiosqlite:///./{DB_NAME}"
+
 #
 DEBUG = True
 
@@ -50,7 +54,7 @@ async def main() -> None:
     )
 
     # Инициализация базы данных
-    db = DataBase()
+    db = DataBase(DB_URL)
     await db.init()
 
     gh_fetcher = GHFetcher(GITHUB_TOKEN)
