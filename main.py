@@ -6,7 +6,7 @@ from github import Github
 repositories_data = []
 
 # Ваш GitHub токен
-GITHUB_TOKEN = "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"
+GITHUB_TOKEN = "token"
 
 # Инициализация клиента GitHub
 git = Github(GITHUB_TOKEN)
