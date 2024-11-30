@@ -6,13 +6,13 @@ from github import Github
 repositories_data = []
 
 # Ваш GitHub токен
-GITHUB_TOKEN = ""
+GITHUB_TOKEN = "token"
 
 # Инициализация клиента GitHub
 git = Github()
 
 # Количество репозиториев для обработки
-MAX_REPOS = 100
+MAX_REPOS = 1000
 
 # Логгер
 logging.basicConfig(level=logging.INFO, filename="app_log.log", filemode="w", encoding="utf-8",
@@ -24,18 +24,27 @@ def fetch_repositories():
     for i in range(get_request_count(MAX_REPOS)):
         # Вычитываем страницы (1 страница содержит 100 репозиториев)
         repos = git.search_repositories(
-            query=generate_random_stars_range(),
+            query="",
             sort="stars",
-            order="desc"
+            order="desc",
+            per_page=100
         )
 
         for repo in repos:
             try:
+                if repo.size > 500:
+                    logging.info(f'Превышен размер файла {repo.full_name}, размер {repo.size}')
+                    pass
+
+                if repo.language is None:
+                    logging.info(f'Язык в репозитории {repo.full_name} - None')
+                    pass
+
                 repo_data = {
                     "name": repo.full_name,
                     "stars": repo.stargazers_count,
-                    "language": repo.language,
-                    "lines_of_code": get_lines_of_code(repo),
+                    "language": repo.language
+                    # "lines_of_code": get_lines_of_code(repo),
                 }
 
                 repositories_data.append(repo_data)
