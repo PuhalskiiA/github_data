@@ -8,13 +8,19 @@ import httpx
 
 
 class RepoInfo(BaseModel):
+    name: str
+    lang: str
+    loc: int
+
+
+class SearchResultRepo(BaseModel):
     full_name: str
     language: str | None
     contents_url: str
 
 
 class SearchResult(BaseModel):
-    items: list[RepoInfo]
+    items: list[SearchResultRepo]
 
 
 # Ваш GitHub токен
@@ -35,8 +41,7 @@ class GHFetcher:
     def __init__(self):
         self.httpx_client = httpx.AsyncClient()
 
-    # Получение репозиториев
-    async def fetch_repos_page(self, page: int) -> SearchResult:
+    async def fetch_repos_page(self, page: int) -> list[RepoInfo]:
         # Вычитываем страницы (1 страница содержит 100 репозиториев)
         try:
             response = await self.httpx_client.get(
@@ -49,16 +54,29 @@ class GHFetcher:
                     "page": page,
                 },
             )
-            return SearchResult(**response.json())
+            result = SearchResult(**response.json())
+            parse_tasks = [
+                self.parse_repo(item)
+                for item in result.items
+                if item.language is not None
+            ]
+            return await asyncio.gather(*parse_tasks)
+
         except Exception as e:
             logging.info(f"Ошибка при считывании страницы {page}: {e}")
+            return []
 
+    async def parse_repo(self, repo: SearchResultRepo) -> RepoInfo:
+        return RepoInfo(name=repo.full_name, lang=repo.language, loc=0)
+
+    # Получение репозиториев
     async def fetch_repos(self, pages: int) -> None:
         pages = min(pages, get_request_count())
         result_tasks = [self.fetch_repos_page(i) for i in range(pages)]
         results = await asyncio.gather(*result_tasks)
-        for result in results:
-            print(result)
+        infos = [info for result in results for info in result]
+        for info in infos:
+            print(info)
 
 
 # for repo in repos:
