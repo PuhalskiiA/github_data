@@ -6,13 +6,13 @@ from github import Github
 repositories_data = []
 
 # Ваш GitHub токен
-GITHUB_TOKEN = "token"
+GITHUB_TOKEN = ""
 
 # Инициализация клиента GitHub
-git = Github(GITHUB_TOKEN)
+git = Github()
 
 # Количество репозиториев для обработки
-MAX_REPOS = 1000
+MAX_REPOS = 100
 
 # Логгер
 logging.basicConfig(level=logging.INFO, filename="app_log.log", filemode="w", encoding="utf-8",
