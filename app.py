@@ -24,12 +24,22 @@ GITHUB_TOKEN = "token"
 MAX_REPOS = 200
 
 
-# Получение репозиториев
-async def fetch_repos_page(page: int) -> SearchResult:
-    # Вычитываем страницы (1 страница содержит 100 репозиториев)
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
+def get_request_count() -> int:
+    if MAX_REPOS % 100 == 0:
+        return MAX_REPOS // 100
+    else:
+        return MAX_REPOS // 100 + 1
+
+
+class GHFetcher:
+    def __init__(self):
+        self.httpx_client = httpx.AsyncClient()
+
+    # Получение репозиториев
+    async def fetch_repos_page(self, page: int) -> SearchResult:
+        # Вычитываем страницы (1 страница содержит 100 репозиториев)
+        try:
+            response = await self.httpx_client.get(
                 "https://api.github.com/search/repositories?q=''",
                 params={
                     "q": "stars>100",
@@ -40,8 +50,15 @@ async def fetch_repos_page(page: int) -> SearchResult:
                 },
             )
             return SearchResult(**response.json())
-    except Exception as e:
-        logging.info(f"Ошибка при считывании страницы {page}: {e}")
+        except Exception as e:
+            logging.info(f"Ошибка при считывании страницы {page}: {e}")
+
+    async def fetch_repos(self, pages: int) -> None:
+        pages = min(pages, get_request_count())
+        result_tasks = [self.fetch_repos_page(i) for i in range(pages)]
+        results = await asyncio.gather(*result_tasks)
+        for result in results:
+            print(result)
 
 
 # for repo in repos:
@@ -62,14 +79,6 @@ async def fetch_repos_page(page: int) -> SearchResult:
 #         }
 #         repositories_data.append(repo_data)
 #         logging.info(f"Добавлен репозиторий: {repo_data}")
-
-
-def get_request_count() -> int:
-    if MAX_REPOS % 100 == 0:
-        return MAX_REPOS // 100
-    else:
-        return MAX_REPOS // 100 + 1
-
 
 # def generate_random_stars_range():
 #     start = random.randint(0, 1000)
@@ -98,14 +107,6 @@ def get_lines_of_code(repo) -> int:
         return 0
 
 
-async def fetch_repos(pages: int) -> None:
-    pages = min(pages, get_request_count())
-    result_tasks = [fetch_repos_page(i) for i in range(pages)]
-    results = await asyncio.gather(*result_tasks)
-    for result in results:
-        print(result)
-
-
 async def main() -> None:
     # Логгер
     logging.basicConfig(
@@ -117,7 +118,8 @@ async def main() -> None:
     )
 
     # Хранилище данных о репозиториях
-    await fetch_repos(1)
+    gh_fetcher = GHFetcher()
+    await gh_fetcher.fetch_repos(1)
 
     # TODO: Заменить на логгер
     # print("\nСобранные данные о репозиториях:")
