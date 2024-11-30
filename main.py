@@ -54,7 +54,6 @@ def get_request_count(__x: int):
 def generate_random_stars_range():
     start = random.randint(0, 1000)
     end = start + random.randint(50, 500)
-
     return f"stars:{start}..{end}"
 
 
