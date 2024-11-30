@@ -15,7 +15,7 @@ DEBUG = True
 GITHUB_TOKEN = "token"
 
 # Количество репозиториев для обработки
-MAX_REPOS = 200
+MAX_REPOS = 500
 
 
 def get_request_count() -> int:
@@ -30,16 +30,16 @@ class App:
         self.db = db
         self.fetcher = fetcher
 
-    async def fetch_and_save_page(self, page: int) -> None:
-        infos = await self.fetcher.fetch_repos_page(page)
-        if DEBUG:
-            for info in infos:
-                print(info)
+    async def fetch_and_save_page(self) -> None:
+        infos = await self.fetcher.fetch_repos_page()
         await self.db.add_repo_info(infos)
 
-    async def fetch_and_save_pages(self, pages: int) -> None:
-        pages = min(pages, get_request_count())
-        result_tasks = [self.fetch_and_save_page(page) for page in range(pages)]
+        if DEBUG:
+            for info in infos:
+                logging.info(f"Сохранен репозиторий {info}")
+
+    async def fetch_and_save_pages(self) -> None:
+        result_tasks = [self.fetch_and_save_page() for _ in range(get_request_count())]
         await asyncio.gather(*result_tasks)
 
 
@@ -60,12 +60,7 @@ async def main() -> None:
     gh_fetcher = GHFetcher(GITHUB_TOKEN)
 
     app = App(db, gh_fetcher)
-    await app.fetch_and_save_pages(1)
-
-    # TODO: Заменить на логгер
-    # print("\nСобранные данные о репозиториях:")
-    # for repo_data in repositories_data:
-    #     print(repo_data)
+    await app.fetch_and_save_pages()
 
 
 if __name__ == "__main__":
