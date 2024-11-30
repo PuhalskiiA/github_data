@@ -1,4 +1,5 @@
 import logging
+import asyncio
 
 # import random
 
@@ -24,20 +25,21 @@ MAX_REPOS = 200
 
 
 # Получение репозиториев
-def fetch_repos_page(page: int) -> SearchResult:
+async def fetch_repos_page(page: int) -> SearchResult:
     # Вычитываем страницы (1 страница содержит 100 репозиториев)
     try:
-        response = httpx.get(
-            "https://api.github.com/search/repositories?q=''",
-            params={
-                "q": "stars>100",
-                "sort": "stars",
-                "order": "desc",
-                "per_page": 100,
-                "page": page,
-            },
-        )
-        return SearchResult(**response.json())
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://api.github.com/search/repositories?q=''",
+                params={
+                    "q": "stars>100",
+                    "sort": "stars",
+                    "order": "desc",
+                    "per_page": 100,
+                    "page": page,
+                },
+            )
+            return SearchResult(**response.json())
     except Exception as e:
         logging.info(f"Ошибка при считывании страницы {page}: {e}")
 
@@ -96,14 +98,15 @@ def get_lines_of_code(repo) -> int:
         return 0
 
 
-def fetch_repos(pages: int) -> None:
+async def fetch_repos(pages: int) -> None:
     pages = min(pages, get_request_count())
-    for i in range(pages):
-        search_result = fetch_repos_page(i)
-        print(search_result)
+    result_tasks = [fetch_repos_page(i) for i in range(pages)]
+    results = await asyncio.gather(*result_tasks)
+    for result in results:
+        print(result)
 
 
-def main() -> None:
+async def main() -> None:
     # Логгер
     logging.basicConfig(
         level=logging.INFO,
@@ -114,7 +117,7 @@ def main() -> None:
     )
 
     # Хранилище данных о репозиториях
-    fetch_repos(1)
+    await fetch_repos(1)
 
     # TODO: Заменить на логгер
     # print("\nСобранные данные о репозиториях:")
@@ -123,4 +126,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
