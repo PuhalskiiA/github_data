@@ -1,5 +1,6 @@
 import logging
 import asyncio
+from datetime import datetime
 
 # import random
 
@@ -7,27 +8,22 @@ from pydantic import BaseModel
 import httpx
 
 
-class RepoInfo(BaseModel):
-    name: str
-    lang: str
-    loc: int
-
-
-class SearchResultRepo(BaseModel):
-    full_name: str
-    language: str | None
-    contents_url: str
-
-
-class SearchResult(BaseModel):
-    items: list[SearchResultRepo]
-
-
 # Ваш GitHub токен
 GITHUB_TOKEN = "token"
 
 # Количество репозиториев для обработки
 MAX_REPOS = 200
+
+
+class RepoInfo(BaseModel):
+    full_name: str
+    language: str | None
+    created_at: datetime
+    pushed_at: datetime
+
+
+class SearchResult(BaseModel):
+    items: list[RepoInfo]
 
 
 def get_request_count() -> int:
@@ -47,7 +43,7 @@ class GHFetcher:
             response = await self.httpx_client.get(
                 "https://api.github.com/search/repositories?q=''",
                 params={
-                    "q": "stars>100",
+                    "q": f"stars:>{100}",
                     "sort": "stars",
                     "order": "desc",
                     "per_page": 100,
@@ -55,19 +51,11 @@ class GHFetcher:
                 },
             )
             result = SearchResult(**response.json())
-            parse_tasks = [
-                self.parse_repo(item)
-                for item in result.items
-                if item.language is not None
-            ]
-            return await asyncio.gather(*parse_tasks)
+            return result.items
 
         except Exception as e:
             logging.info(f"Ошибка при считывании страницы {page}: {e}")
             return []
-
-    async def parse_repo(self, repo: SearchResultRepo) -> RepoInfo:
-        return RepoInfo(name=repo.full_name, lang=repo.language, loc=0)
 
     # Получение репозиториев
     async def fetch_repos(self, pages: int) -> None:
