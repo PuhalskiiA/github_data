@@ -1,4 +1,5 @@
 import logging
+import asyncio
 
 from datetime import datetime
 
@@ -47,15 +48,13 @@ class TokenProvider:
 
         return tokens
 
-    def get_token(self) -> Token:
-        for token in self.__tokens:
-            if token.expired_at is None:
-                return token
-
-            if (datetime.now() - token.expired_at).total_seconds() < 3600:
+    async def get_token(self) -> Token:
+        while True:
+            for token in self.__tokens:
+                if token.expired_at is None:
+                    return token
+                if (datetime.now() - token.expired_at).total_seconds() >= 70:
+                    token.expired_at = None
+                    return token
                 continue
-            else:
-                token.expired_at = datetime.now()
-                return token
-
-        raise NoTokenAvailable()
+            await asyncio.sleep(70)

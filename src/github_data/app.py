@@ -32,9 +32,6 @@ class App:
         self.__db = db
         self.__fetcher = fetcher
 
-    def __update_fetcher_token(self) -> None:
-        self.__fetcher.token = TOKEN_PROVIDER.get_token()
-
     def __get_request_count(self) -> int:
         per_page = self.__fetcher.per_page
         if MAX_REPOS % per_page == 0:
@@ -84,7 +81,7 @@ class App:
                 )
 
                 self.__fetcher.token.expired_at = datetime.now()
-                self.__fetcher.token = TOKEN_PROVIDER.get_token()
+                self.__fetcher.token = await TOKEN_PROVIDER.get_token()
 
                 logging.error(f"Токен обновлен: {self.__fetcher.token.value}")
                 continue
@@ -109,7 +106,7 @@ async def main() -> None:
     db = DataBase(DB_URL)
     await db.init()
 
-    gh_fetcher = GHFetcher(TOKEN_PROVIDER.get_token())
+    gh_fetcher = GHFetcher(await TOKEN_PROVIDER.get_token())
 
     app = App(db, gh_fetcher)
     # Кол-во страницы высчитывается на основе кол-ва запрашиваемых репозиториев
