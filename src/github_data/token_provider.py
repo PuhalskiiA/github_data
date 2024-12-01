@@ -55,7 +55,7 @@ class TokenProvider:
             if (datetime.now() - token.expired_at).total_seconds() < 3600:
                 continue
             else:
-                token.expired_at = None
+                token.expired_at = datetime.now()
                 return token
 
         raise NoTokenAvailable()

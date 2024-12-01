@@ -1,3 +1,4 @@
+import base64
 import logging
 
 from pydantic import BaseModel
@@ -21,11 +22,6 @@ class GHFetcher:
         self.__per_page = per_page
         self.__token = token
         self.__httpx_client = httpx.AsyncClient()
-        self.__total_count = 0
-
-    @property
-    def total_count(self) -> int:
-        return self.__total_count
 
     @property
     def token(self) -> Token:
@@ -35,21 +31,24 @@ class GHFetcher:
     def token(self, token: Token) -> None:
         self.__token = token
 
-    async def fetch_repos_page(self, page: int) -> list[RepoInfo]:
+    async def fetch_repos_page(self, page: int, query: str) -> list[RepoInfo]:
         headers = {
             "Authorization": f"Bearer {self.token.value}",
         }
         params = httpx.QueryParams(
             {
-                "q": f"stars:>{100}",
+                "q": query,
                 "sort": "stars",
                 "order": "desc",
                 "per_page": self.__per_page,
                 "page": page,
             }
         )
+
+        logging.info(f"Параметры запроса: {params}")
+
         response = await self.__httpx_client.get(
-            "https://api.github.com/search/repositories", headers=headers, params=params
+            "https://api.github.com/search/repositories", params=params, headers=headers
         )
 
         if response.status_code == httpx.codes.FORBIDDEN:
@@ -57,9 +56,5 @@ class GHFetcher:
 
         result = SearchResult(**response.json())
         logging.info(f"Считал страницу {page} из {result.total_count}")
-
-        # TODO: Не работает нихуя
-        if self.__total_count == 0:
-            self.__total_count = result.total_count
 
         return result.items

@@ -18,6 +18,7 @@ DEBUG = True
 PATH_TO_TOKENS = sys.argv[1]
 
 # Количество репозиториев для обработки
+# 1000 - max
 MAX_REPOS = 1000
 
 TOKEN_PROVIDER = TokenProvider(PATH_TO_TOKENS)
@@ -39,36 +40,52 @@ class App:
         self.__fetcher.token = TOKEN_PROVIDER.get_token()
 
     async def fetch_and_save_pages(self, pages: int) -> None:
-        await self.fetch_and_save_page(1)
         result_tasks = [
-            self.fetch_and_save_page(self.__get_page()) for _ in range(pages - 1)
+            self.fetch_and_save_page(page + 1) for page in range(pages)
         ]
+
         await asyncio.gather(*result_tasks)
 
-    def __get_page(self) -> int:
-        return random.randint(2, self.__fetcher.total_count + 1)
-
     async def fetch_and_save_page(self, page: int) -> None:
-        while True:
-            try:
-                infos = await self.__fetcher.fetch_repos_page(page)
-                await self.__db.add_repo_info(infos)
+        try:
+            logging.info(f"Токен доступа: {self.__fetcher.token.value}")
 
-                if DEBUG:
-                    counter = 1
-                    for info in infos:
-                        logging.info(f"{counter} Сохранен репозиторий {info}")
-                        counter += 1
+            infos = await self.__fetcher.fetch_repos_page(page, self.__generate_query())
+            await self.__db.add_repo_info(infos)
 
-                break
+            if DEBUG:
+                counter = 1
+                for info in infos:
+                    logging.info(f"{page}:{counter} Сохранен репозиторий {info}")
+                    counter += 1
 
-            except APIRateException:
-                logging.error(
-                    f"Достигнут лимит запросов на странице {page}. Получение нового токена и перезапуск"
-                )
+        except APIRateException:
+            logging.error(
+                f"Достигнут лимит запросов на странице {page}. Получение нового токена и перезапуск"
+            )
 
-                self.__fetcher.token.expired_at = datetime.now()
-                self.__fetcher.token = TOKEN_PROVIDER.get_token()
+            self.__fetcher.token.expired_at = datetime.now()
+            self.__fetcher.token = TOKEN_PROVIDER.get_token()
+
+            await self.fetch_and_save_pages(page)
+
+            logging.error(
+                f"Токен обновлен: {self.__fetcher.token.value}"
+            )
+
+        except Exception as e:
+            logging.error(
+                f"Ошибка обработки страницы {page}, {e}"
+            )
+
+    @staticmethod
+    def __generate_query(year: int = 2023, day: int = 1):
+        month = random.randint(1, 13)
+
+        date_from = datetime(year, month, day)
+        date_to = datetime(year, month + 3, day)
+
+        return f"created:>{date_from} created:<{date_to}"
 
 
 async def main() -> None:
