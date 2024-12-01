@@ -3,8 +3,8 @@ import logging
 from pydantic import BaseModel
 import httpx
 
-from src.github_data.db import RepoInfo
-from src.github_data.token_provider import Token
+from db import RepoInfo
+from token_provider import Token
 
 
 class SearchResult(BaseModel):

@@ -4,9 +4,9 @@ import sys
 import random
 from datetime import datetime
 
-from src.github_data.db import DataBase
-from src.github_data.gh_fetcher import GHFetcher, APIRateException
-from src.github_data.token_provider import TokenProvider
+from db import DataBase
+from gh_fetcher import GHFetcher, APIRateException
+from token_provider import TokenProvider
 
 # Хранилище
 DB_NAME = "data.db"
