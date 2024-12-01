@@ -17,7 +17,6 @@ class Token:
     def get_expired_at(self) -> datetime:
         return self.__expired_at
 
-# Не забыть выставить expired_at
 
 class TokenProvider:
     def __init__(self, path: str) -> None:

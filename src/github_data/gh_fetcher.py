@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import httpx
 
 from db import RepoInfo
+from src.github_data.token_provider import Token
 
 
 class SearchResult(BaseModel):
@@ -17,7 +18,7 @@ class APIRateException(Exception):
 
 
 class GHFetcher:
-    def __init__(self, gh_token: str, per_page: int = 100) -> None:
+    def __init__(self, gh_token: Token, per_page: int = 100) -> None:
         self.per_page = per_page
         self.gh_token = gh_token
         self.httpx_client = httpx.AsyncClient()
@@ -28,7 +29,7 @@ class GHFetcher:
 
     async def fetch_repos_page(self, page: int) -> list[RepoInfo]:
         headers = {
-            "Authorization": f"Bearer {self.gh_token}",
+            "Authorization": f"Bearer {self.gh_token.get_value()}",
         }
 
         response = await self.httpx_client.get(

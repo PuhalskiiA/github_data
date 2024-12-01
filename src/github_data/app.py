@@ -2,6 +2,7 @@ import logging
 import asyncio
 import sys
 import random
+from datetime import datetime
 
 from db import DataBase
 from gh_fetcher import GHFetcher
@@ -66,7 +67,10 @@ class App:
 
         except APIRateException:
             logging.error(f"Достигнут лимит запросов на странице {page}. Получение нового токена и перезапуск")
+
+            self.fetcher.gh_token.set_expired_at(datetime.now())
             self.__update_fetcher()
+
             await self.fetcher.fetch_repos_page(page)
 
 
