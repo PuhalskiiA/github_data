@@ -32,16 +32,12 @@ def get_request_count() -> int:
 
 
 class App:
-    def __init__(self, db: DataBase) -> None:
+    def __init__(self, db: DataBase, fetcher: GHFetcher) -> None:
         self.db = db
-        self.__update_fetcher()
+        self.fetcher = fetcher
 
-    def __update_fetcher(self) -> None:
-        self.fetcher = self.__get_fetcher()
-
-    @staticmethod
-    def __get_fetcher():
-        return GHFetcher(TOKEN_PROVIDER.get_token().get_value())
+    def __update_fetcher_token(self) -> None:
+        self.fetcher.set_token(TOKEN_PROVIDER.get_token())
 
     async def fetch_and_save_pages(self, pages: int) -> None:
         result_tasks = [self.fetch_and_save_page(self.__get_page(self.fetcher)) for _ in range(pages)]
@@ -68,8 +64,8 @@ class App:
         except APIRateException:
             logging.error(f"Достигнут лимит запросов на странице {page}. Получение нового токена и перезапуск")
 
-            self.fetcher.gh_token.set_expired_at(datetime.now())
-            self.__update_fetcher()
+            self.fetcher.token.set_expired_at(datetime.now())
+            self.fetcher.set_token(TOKEN_PROVIDER)
 
             await self.fetcher.fetch_repos_page(page)
 
@@ -89,7 +85,9 @@ async def main() -> None:
     db = DataBase(DB_URL)
     await db.init()
 
-    app = App(db)
+    gh_fetcher = GHFetcher(TOKEN_PROVIDER.get_token())
+
+    app = App(db, gh_fetcher)
     # Кол-во страницы высчитывается на основе кол-ва запрашиваемых репозиториев
     await app.fetch_and_save_pages(get_request_count())
 

@@ -18,18 +18,21 @@ class APIRateException(Exception):
 
 
 class GHFetcher:
-    def __init__(self, gh_token: Token, per_page: int = 100) -> None:
+    def __init__(self, token: Token, per_page: int = 100) -> None:
         self.per_page = per_page
-        self.gh_token = gh_token
+        self.token = token
         self.httpx_client = httpx.AsyncClient()
         self.total_count = 0
 
     def get_total_count(self):
         return self.total_count
 
+    def set_token(self, token: Token):
+        self.token = token
+
     async def fetch_repos_page(self, page: int) -> list[RepoInfo]:
         headers = {
-            "Authorization": f"Bearer {self.gh_token.get_value()}",
+            "Authorization": f"Bearer {self.token.get_value()}",
         }
 
         response = await self.httpx_client.get(
