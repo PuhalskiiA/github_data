@@ -1,8 +1,8 @@
 import logging
 import asyncio
 import sys
-import random
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 from db import DataBase
 from gh_fetcher import GHFetcher, APIRateException
@@ -23,12 +23,8 @@ MAX_REPOS = 1000
 
 TOKEN_PROVIDER = TokenProvider(PATH_TO_TOKENS)
 
-
-def get_request_count() -> int:
-    if MAX_REPOS % 100 == 0:
-        return MAX_REPOS // 100
-    else:
-        return MAX_REPOS // 100 + 1
+# Выгружить репозитории за последние n лет
+FETCH_YEARS = 2
 
 
 class App:
@@ -39,53 +35,57 @@ class App:
     def __update_fetcher_token(self) -> None:
         self.__fetcher.token = TOKEN_PROVIDER.get_token()
 
-    async def fetch_and_save_pages(self, pages: int) -> None:
-        result_tasks = [
-            self.fetch_and_save_page(page + 1) for page in range(pages)
-        ]
+    def __get_request_count(self) -> int:
+        per_page = self.__fetcher.per_page
+        if MAX_REPOS % per_page == 0:
+            return MAX_REPOS // per_page
+        else:
+            return MAX_REPOS // per_page + 1
 
-        await asyncio.gather(*result_tasks)
+    async def search_and_save(self, query: str) -> None:
+        for page in range(1, self.__get_request_count() + 1):
+            await self.search_and_save_page(query, page)
 
-    async def fetch_and_save_page(self, page: int) -> None:
-        try:
-            logging.info(f"Токен доступа: {self.__fetcher.token.value}")
+    async def fetch_and_save_repos(self) -> None:
+        tasks = []
+        end_date = datetime.now()
+        current_date = end_date - relativedelta(years=FETCH_YEARS)
+        while current_date < end_date:
+            next_date = current_date + relativedelta(months=1)
+            query = f"created:>{current_date} created:<{next_date}"
+            current_date = next_date
+            tasks.append(self.search_and_save(query))
+        await asyncio.gather(*tasks)
 
-            infos = await self.__fetcher.fetch_repos_page(page, self.__generate_query())
-            await self.__db.add_repo_info(infos)
+    async def search_and_save_page(self, query: str, page: int) -> None:
+        while True:
+            try:
+                logging.info(f"Токен доступа: {self.__fetcher.token.value}")
 
-            if DEBUG:
-                counter = 1
-                for info in infos:
-                    logging.info(f"{page}:{counter} Сохранен репозиторий {info}")
-                    counter += 1
+                infos = await self.__fetcher.fetch_repos_page(page, query)
+                await self.__db.add_repo_info(infos)
 
-        except APIRateException:
-            logging.error(
-                f"Достигнут лимит запросов на странице {page}. Получение нового токена и перезапуск"
-            )
+                if DEBUG:
+                    counter = 1
+                    for info in infos:
+                        logging.info(f"{page}:{counter} Сохранен репозиторий {info}")
+                        counter += 1
 
-            self.__fetcher.token.expired_at = datetime.now()
-            self.__fetcher.token = TOKEN_PROVIDER.get_token()
+            except APIRateException:
+                logging.error(
+                    f"Достигнут лимит запросов на странице {page}. Получение нового токена и перезапуск"
+                )
 
-            await self.fetch_and_save_pages(page)
+                self.__fetcher.token.expired_at = datetime.now()
+                self.__fetcher.token = TOKEN_PROVIDER.get_token()
 
-            logging.error(
-                f"Токен обновлен: {self.__fetcher.token.value}"
-            )
+                logging.error(f"Токен обновлен: {self.__fetcher.token.value}")
+                continue
 
-        except Exception as e:
-            logging.error(
-                f"Ошибка обработки страницы {page}, {e}"
-            )
+            except Exception as e:
+                logging.error(f"Ошибка обработки страницы {page}, {e}")
 
-    @staticmethod
-    def __generate_query(year: int = 2023, day: int = 1):
-        month = random.randint(1, 13)
-
-        date_from = datetime(year, month, day)
-        date_to = datetime(year, month + 3, day)
-
-        return f"created:>{date_from} created:<{date_to}"
+            break
 
 
 async def main() -> None:
@@ -106,7 +106,7 @@ async def main() -> None:
 
     app = App(db, gh_fetcher)
     # Кол-во страницы высчитывается на основе кол-ва запрашиваемых репозиториев
-    await app.fetch_and_save_pages(get_request_count())
+    await app.fetch_and_save_repos()
 
 
 if __name__ == "__main__":

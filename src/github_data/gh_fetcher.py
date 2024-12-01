@@ -1,4 +1,3 @@
-import base64
 import logging
 
 from pydantic import BaseModel
@@ -22,6 +21,10 @@ class GHFetcher:
         self.__per_page = per_page
         self.__token = token
         self.__httpx_client = httpx.AsyncClient()
+
+    @property
+    def per_page(self) -> int:
+        return self.__per_page
 
     @property
     def token(self) -> Token:
