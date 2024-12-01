@@ -44,7 +44,7 @@ class App:
         fmt_str = "%Y-%m-%d"
         date_from_str = date_from.strftime(fmt_str)
         date_to_str = date_to.strftime(fmt_str)
-        return f"created:>={date_from_str} created:<{date_to_str}"
+        return f"fork:false created:{date_from_str}..{date_to_str}"
 
     async def search_and_save(self, query: str) -> None:
         for page in range(1, self.__get_request_count() + 1):
