@@ -24,7 +24,7 @@ MAX_REPOS = 1000
 TOKEN_PROVIDER = TokenProvider(PATH_TO_TOKENS)
 
 # Выгружить репозитории за последние n лет
-FETCH_YEARS = 2
+FETCH_YEARS = 1
 
 
 class App:
@@ -42,6 +42,13 @@ class App:
         else:
             return MAX_REPOS // per_page + 1
 
+    @staticmethod
+    def __get_query(date_from: datetime, date_to: datetime) -> str:
+        fmt_str = "%Y-%m-%d"
+        date_from_str = date_from.strftime(fmt_str)
+        date_to_str = date_to.strftime(fmt_str)
+        return f"created:>={date_from_str} created:<{date_to_str}"
+
     async def search_and_save(self, query: str) -> None:
         for page in range(1, self.__get_request_count() + 1):
             await self.search_and_save_page(query, page)
@@ -52,9 +59,9 @@ class App:
         current_date = end_date - relativedelta(years=FETCH_YEARS)
         while current_date < end_date:
             next_date = current_date + relativedelta(months=1)
-            query = f"created:>{current_date} created:<{next_date}"
-            current_date = next_date
+            query = self.__get_query(current_date, next_date)
             tasks.append(self.search_and_save(query))
+            current_date = next_date
         await asyncio.gather(*tasks)
 
     async def search_and_save_page(self, query: str, page: int) -> None:
