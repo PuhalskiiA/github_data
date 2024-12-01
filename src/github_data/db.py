@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 
 from sqlmodel import SQLModel, Field
@@ -5,7 +6,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 
 class RepoInfo(SQLModel, table=True):
-    id: int = Field(primary_key=True)
+    uid: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    id: int
     full_name: str
     language: str | None
     created_at: datetime
