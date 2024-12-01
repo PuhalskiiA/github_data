@@ -35,7 +35,7 @@ class TokenProvider:
 
         try:
             with open(path, "r") as file:
-                for line in file.readline():
+                for line in file.readlines():
                     token_str = line.strip()
                     if token_str:
                         tokens.append(Token(token=token_str))

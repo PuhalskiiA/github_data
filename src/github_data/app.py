@@ -32,46 +32,43 @@ def get_request_count() -> int:
 
 class App:
     def __init__(self, db: DataBase, fetcher: GHFetcher) -> None:
-        self.db = db
-        self.fetcher = fetcher
+        self.__db = db
+        self.__fetcher = fetcher
 
     def __update_fetcher_token(self) -> None:
-        self.fetcher.token = TOKEN_PROVIDER.get_token()
+        self.__fetcher.token = TOKEN_PROVIDER.get_token()
 
     async def fetch_and_save_pages(self, pages: int) -> None:
+        await self.fetch_and_save_page(1)
         result_tasks = [
-            self.fetch_and_save_page(self.__get_page(self.fetcher))
-            for _ in range(pages)
+            self.fetch_and_save_page(self.__get_page()) for _ in range(pages - 1)
         ]
         await asyncio.gather(*result_tasks)
 
-    @staticmethod
-    def __get_page(fetcher: GHFetcher) -> int:
-        if fetcher.total_count == 0:
-            return 1
-        else:
-            return random.randint(2, fetcher.total_count + 1)
+    def __get_page(self) -> int:
+        return random.randint(2, self.__fetcher.total_count + 1)
 
     async def fetch_and_save_page(self, page: int) -> None:
-        try:
-            infos = await self.fetcher.fetch_repos_page(page)
-            await self.db.add_repo_info(infos)
+        while True:
+            try:
+                infos = await self.__fetcher.fetch_repos_page(page)
+                await self.__db.add_repo_info(infos)
 
-            if DEBUG:
-                counter = 1
-                for info in infos:
-                    logging.info(f"{counter} Сохранен репозиторий {info}")
-                    counter += 1
+                if DEBUG:
+                    counter = 1
+                    for info in infos:
+                        logging.info(f"{counter} Сохранен репозиторий {info}")
+                        counter += 1
 
-        except APIRateException:
-            logging.error(
-                f"Достигнут лимит запросов на странице {page}. Получение нового токена и перезапуск"
-            )
+                break
 
-            self.fetcher.token.expired_at = datetime.now()
-            self.fetcher.token = TOKEN_PROVIDER.get_token()
+            except APIRateException:
+                logging.error(
+                    f"Достигнут лимит запросов на странице {page}. Получение нового токена и перезапуск"
+                )
 
-            await self.fetcher.fetch_repos_page(page)
+                self.__fetcher.token.expired_at = datetime.now()
+                self.__fetcher.token = TOKEN_PROVIDER.get_token()
 
 
 async def main() -> None:
