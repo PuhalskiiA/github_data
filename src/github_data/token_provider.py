@@ -4,18 +4,25 @@ from datetime import datetime
 
 
 class Token:
-    def __init__(self, token: str):
+    def __init__(self, token: str) -> None:
         self.__value = token
-        self.__expired_at = None
+        self.__expired_at: datetime | None = None
 
-    def get_value(self) -> str:
+    @property
+    def value(self) -> str:
         return self.__value
 
-    def set_expired_at(self, expired_at: datetime) -> None:
+    @property
+    def expired_at(self) -> datetime | None:
+        return self.__expired_at
+
+    @expired_at.setter
+    def expired_at(self, expired_at: datetime) -> None:
         self.__expired_at = expired_at
 
-    def get_expired_at(self) -> datetime:
-        return self.__expired_at
+
+class NoTokenAvailable(Exception):
+    pass
 
 
 class TokenProvider:
@@ -27,10 +34,8 @@ class TokenProvider:
         tokens = []
 
         try:
-            with open(path, 'r') as file:
-                lines = file.read().splitlines()
-
-                for line in lines:
+            with open(path, "r") as file:
+                for line in file.readline():
                     token_str = line.strip()
                     if token_str:
                         tokens.append(Token(token=token_str))
@@ -44,11 +49,13 @@ class TokenProvider:
 
     def get_token(self) -> Token:
         for token in self.__tokens:
-            if token.get_expired_at() is None:
+            if token.expired_at is None:
                 return token
 
-            if (datetime.now() - token.get_expired_at()).total_seconds() < 3600:
+            if (datetime.now() - token.expired_at).total_seconds() < 3600:
                 continue
             else:
-                token.set_expired_at(None)
+                token.expired_at = None
                 return token
+
+        raise NoTokenAvailable()

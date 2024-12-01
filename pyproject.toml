@@ -15,5 +15,6 @@ dependencies = [
 dev = [
     "black>=24.10.0",
     "mypy>=1.13.0",
+    "python-lsp-server[all]>=1.12.0",
     "ruff>=0.8.1",
 ]
