@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import sys
+import tqdm
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
@@ -31,6 +32,7 @@ class App:
     def __init__(self, db: DataBase, fetcher: GHFetcher) -> None:
         self.__db = db
         self.__fetcher = fetcher
+        self.__tqdm: tqdm.tqdm | None = None
 
     def __get_request_count(self) -> int:
         per_page = self.__fetcher.per_page
@@ -53,17 +55,21 @@ class App:
         while date < end_date:
             query = self.__get_query(date)
             await self.search_and_save(query)
+            self.__tqdm.update(1)
             date = date + relativedelta(days=1)
 
     async def fetch_and_save_repos(self) -> None:
         tasks = []
         end_date = datetime.now()
         current_date = end_date - relativedelta(years=FETCH_YEARS)
+        total_steps = (end_date - current_date).days
+        self.__tqdm = tqdm.tqdm(total=total_steps, desc="Fetching")
         while current_date < end_date:
             next_date = current_date + relativedelta(months=1)
             tasks.append(self.search_and_save_by_day(next_date))
             current_date = next_date
         await asyncio.gather(*tasks)
+        self.__tqdm.close()
 
     async def search_and_save_page(self, query: str, page: int) -> None:
         while True:
