@@ -1,6 +1,8 @@
 import logging
 import asyncio
 import sys
+from typing import List
+
 import tqdm
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -8,6 +10,7 @@ from dateutil.relativedelta import relativedelta
 from db import DataBase
 from gh_fetcher import GHFetcher, APIRateException
 from token_provider import TokenProvider
+from picture_generator import PictureGenerator
 
 # Хранилище
 DB_NAME = "data.db"
@@ -27,6 +30,19 @@ TOKEN_PROVIDER = TokenProvider(PATH_TO_TOKENS)
 # Выгружить репозитории за последние n лет
 FETCH_YEARS = 10
 
+
+class RepoItemInfo:
+    def __init__(self, name: str, count: int):
+        self.name = name
+        self.count = count
+
+    def __getitem__(self, key):
+        if key == "name":
+            return self.name
+        elif key == "count":
+            return self.count
+        else:
+            raise KeyError(f"Invalid key: {key}")
 
 class App:
     def __init__(self, db: DataBase, fetcher: GHFetcher) -> None:
@@ -113,14 +129,30 @@ async def main() -> None:
     )
 
     # Инициализация базы данных
-    db = DataBase(DB_URL)
-    await db.init()
+    # db = DataBase(DB_URL)
+    # await db.init()
+    #
+    # gh_fetcher = GHFetcher(await TOKEN_PROVIDER.get_token())
+    #
+    # app = App(db, gh_fetcher)
+    # # Кол-во страницы высчитывается на основе кол-ва запрашиваемых репозиториев
+    # await app.fetch_and_save_repos()
 
-    gh_fetcher = GHFetcher(await TOKEN_PROVIDER.get_token())
+    repo_list: List[RepoItemInfo] = [
+        RepoItemInfo("Python", 150),
+        RepoItemInfo("JavaScript", 120),
+        RepoItemInfo("Java", 100),
+        RepoItemInfo("C++", 80),
+        RepoItemInfo("Ruby", 40),
+        RepoItemInfo("C#", 90),
+        RepoItemInfo("PHP", 60),
+        RepoItemInfo("Go", 50),
+        RepoItemInfo("Swift", 70),
+        RepoItemInfo("Kotlin", 55)
+    ]
 
-    app = App(db, gh_fetcher)
-    # Кол-во страницы высчитывается на основе кол-ва запрашиваемых репозиториев
-    await app.fetch_and_save_repos()
+    PictureGenerator.generate_histogram_picture(repo_list, "name", "count", "histogram_picture", "language", "count")
+    PictureGenerator.generate_pie_picture(repo_list, "Pie_picture", "language")
 
 
 if __name__ == "__main__":
