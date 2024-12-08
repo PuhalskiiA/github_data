@@ -9,12 +9,17 @@ async def main() -> None:
     db = DataBase(settings.db_url)
 
     counts = await db.get_counts()
-    counts = counts.nlargest(20, "count")
+    counts = counts.nlargest(10, "count")
 
     PictureGenerator.generate_histogram_picture(
         counts["count"], "histogram_picture", "language", "count"
     )
-    PictureGenerator.generate_pie_picture(counts["count"], "Pie_picture", "language")
+    PictureGenerator.generate_pie_picture(
+        counts["count"], "Pie_picture", "language"
+    )
+    # PictureGenerator.generate_picture(
+    #     counts["count"], "Dots", "year", "count"
+    # )
 
     print(await db.min_date())
     print(await db.max_date())

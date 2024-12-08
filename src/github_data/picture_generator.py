@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 class PictureGenerator:
     @staticmethod
     def generate_histogram_picture(
-        data: pd.DataFrame, title: str, xlabel: str, ylabel: str
+            data: pd.DataFrame, title: str, xlabel: str, ylabel: str
     ):
         plt.figure(figsize=(10, 6))
         plt.bar(data.index, data, color="skyblue", edgecolor="black", alpha=0.8)
@@ -24,12 +24,14 @@ class PictureGenerator:
         plt.savefig(f"{title}.png")
 
     @staticmethod
-    def generate_pie_picture(data: pd.DataFrame, title: str, item_name: str):
+    def generate_pie_picture(
+            data: pd.DataFrame, title: str, item_name: str
+    ):
         fig, ax = plt.subplots(
             figsize=(20, 15), subplot_kw=dict(aspect="equal"), dpi=80
         )
 
-        explode = [0] * (len(data) - 1) + [0.1]
+        explode = [0] * len(data)
 
         wedges, texts, autotexts = ax.pie(
             data,
@@ -52,6 +54,30 @@ class PictureGenerator:
 
         plt.setp(autotexts, size=18, weight=700)
         ax.set_title(title, fontsize=46)
+
+        plt.savefig(f"{title}.png")
+
+    @staticmethod
+    def generate_picture(data: pd.DataFrame, title: str, xlabel: str, ylabel: str):
+        if data.shape[1] < 3:
+            raise ValueError("DataFrame должен содержать минимум три столбца: для группировки, X и Y.")
+
+        columns = data.columns.tolist()
+        group_col = columns[0]  # Предполагается, что первый столбец — это группирующий (категории)
+        x_col = columns[1]  # Второй столбец — это ось X
+        y_col = columns[2]  # Третий столбец — это ось Y
+
+        plt.figure(figsize=(10, 6), dpi=80)
+
+        grouped = data.groupby(group_col)
+        for name, group in grouped:
+            plt.plot(group[x_col], group[y_col], label=name)
+
+        plt.title(title, fontsize=14)
+        plt.xlabel(xlabel, fontsize=12)
+        plt.ylabel(ylabel, fontsize=12)
+        plt.legend(title=group_col, fontsize=12)
+        plt.grid(True)
 
         plt.savefig(f"{title}.png")
 
