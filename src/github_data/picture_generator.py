@@ -24,18 +24,16 @@ class PictureGenerator:
         plt.savefig(f"{title}.png")
 
     @staticmethod
-    def generate_pie_picture(data: list, title: str, item_name: str):
+    def generate_pie_picture(data: pd.DataFrame, title: str, item_name: str):
         fig, ax = plt.subplots(
             figsize=(20, 15), subplot_kw=dict(aspect="equal"), dpi=80
         )
 
-        languages = [item["name"] for item in data]
-        counts = [item["count"] for item in data]
-        explode = [0] * (len(languages) - 1) + [0.1]
+        explode = [0] * (len(data) - 1) + [0.1]
 
         wedges, texts, autotexts = ax.pie(
-            counts,
-            autopct=lambda pct: func(pct, counts),
+            data,
+            autopct=lambda pct: func(pct, data),
             textprops=dict(color="w", rotation=0),
             colors=plt.cm.Dark2.colors,
             startangle=45,
@@ -44,7 +42,7 @@ class PictureGenerator:
 
         ax.legend(
             wedges,
-            languages,
+            data.index,
             title=item_name,
             loc="center left",
             bbox_to_anchor=(1, 0, 0.5, 1),
@@ -55,7 +53,7 @@ class PictureGenerator:
         plt.setp(autotexts, size=18, weight=700)
         ax.set_title(title, fontsize=46)
 
-        plt.show()
+        plt.savefig(f"{title}.png")
 
 
 def func(pct, allvals):
