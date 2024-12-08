@@ -69,3 +69,32 @@ class DataBase:
                 df = pd.DataFrame(res.all(), columns=["language", "count"])
                 df.set_index("language", inplace=True)
                 return df
+
+    async def get_counts_by_month(
+        self,
+        query_by=RepoInfo.created_at,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+    ) -> pd.DataFrame:
+        if date_from is None:
+            date_from = await self.min_date()
+
+        if date_to is None:
+            date_to = await self.max_date()
+
+        async with self.session() as session:
+            async with session.begin():
+                s = (
+                    select(
+                        RepoInfo.language,
+                        func.count(),
+                        func.strftime("%Y-%m-01", query_by).label("month"),
+                    )
+                    .where(query_by.between(date_from, date_to))
+                    .where(RepoInfo.language.isnot(None))
+                    .group_by("month", RepoInfo.language)
+                )
+                res = await session.execute(s)
+                df = pd.DataFrame(res.all(), columns=["language", "count", "month"])
+                df.set_index(["language", "month"], inplace=True)
+                return df

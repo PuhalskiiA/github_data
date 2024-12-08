@@ -24,6 +24,7 @@ async def main() -> None:
     print(await db.min_date())
     print(await db.max_date())
     print(counts["count"])
+    print(await db.get_counts_by_month())
 
 
 if __name__ == "__main__":
