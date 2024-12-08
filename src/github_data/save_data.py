@@ -11,14 +11,14 @@ from token_provider import TokenProvider
 from settings import settings
 
 
-TOKEN_PROVIDER = TokenProvider(settings.path_to_tokens)
-
-
 class App:
-    def __init__(self, db: DataBase, fetcher: GHFetcher) -> None:
+    def __init__(
+        self, db: DataBase, fetcher: GHFetcher, token_provider: TokenProvider
+    ) -> None:
         self.__db = db
         self.__fetcher = fetcher
         self.__tqdm: tqdm.tqdm | None = None
+        self.__token_provider = token_provider
 
     def __get_request_count(self) -> int:
         per_page = self.__fetcher.per_page
@@ -78,7 +78,7 @@ class App:
                 )
 
                 self.__fetcher.token.expired_at = datetime.now()
-                self.__fetcher.token = await TOKEN_PROVIDER.get_token()
+                self.__fetcher.token = await self.__token_provider.get_token()
 
                 logging.error(f"Токен обновлен: {self.__fetcher.token.value}")
                 continue
@@ -103,9 +103,10 @@ async def main() -> None:
     db = DataBase(settings.db_url)
     await db.init()
 
-    gh_fetcher = GHFetcher(await TOKEN_PROVIDER.get_token())
+    token_proivder = TokenProvider(settings.path_to_tokens)
+    gh_fetcher = GHFetcher(await token_proivder.get_token())
 
-    app = App(db, gh_fetcher)
+    app = App(db, gh_fetcher, token_proivder)
     # Кол-во страницы высчитывается на основе кол-ва запрашиваемых репозиториев
     await app.fetch_and_save_repos()
 
