@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
+import pandas as pd
 
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, select, func
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 
@@ -29,3 +30,42 @@ class DataBase:
                 infos = [RepoInfo.validate(info) for info in infos]
                 session.add_all(infos)
                 await session.commit()
+
+    async def max_date(self) -> datetime:
+        async with self.session() as session:
+            async with session.begin():
+                s = select(func.max(RepoInfo.created_at))
+                res = await session.execute(s)
+                return res.scalar()
+
+    async def min_date(self) -> datetime:
+        async with self.session() as session:
+            async with session.begin():
+                s = select(func.min(RepoInfo.created_at))
+                res = await session.execute(s)
+                return res.scalar()
+
+    async def get_counts(
+        self,
+        query_by=RepoInfo.created_at,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+    ) -> pd.DataFrame:
+        if date_from is None:
+            date_from = await self.min_date()
+
+        if date_to is None:
+            date_to = await self.max_date()
+
+        async with self.session() as session:
+            async with session.begin():
+                s = (
+                    select(RepoInfo.language, func.count())
+                    .where(RepoInfo.language.isnot(None))
+                    .where(query_by.between(date_from, date_to))
+                    .group_by(RepoInfo.language)
+                )
+                res = await session.execute(s)
+                df = pd.DataFrame(res.all(), columns=["language", "count"])
+                df.set_index("language", inplace=True)
+                return df

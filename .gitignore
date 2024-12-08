@@ -1,3 +1,5 @@
 *.log
 *.db
+*.png
+github_tokens
 __pycache__

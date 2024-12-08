@@ -1,4 +1,10 @@
 from picture_generator import PictureGenerator
+from db import DataBase
+import asyncio
+
+# Хранилище
+DB_NAME = "data.db"
+DB_URL = f"sqlite+aiosqlite:///./{DB_NAME}"
 
 
 class RepoItemInfo:
@@ -15,25 +21,21 @@ class RepoItemInfo:
             raise KeyError(f"Invalid key: {key}")
 
 
-def main() -> None:
-    repo_list: list[RepoItemInfo] = [
-        RepoItemInfo("Python", 150),
-        RepoItemInfo("JavaScript", 120),
-        RepoItemInfo("Java", 100),
-        RepoItemInfo("C++", 80),
-        RepoItemInfo("Ruby", 40),
-        RepoItemInfo("C#", 90),
-        RepoItemInfo("PHP", 60),
-        RepoItemInfo("Go", 50),
-        RepoItemInfo("Swift", 70),
-        RepoItemInfo("Kotlin", 55),
-    ]
+async def main() -> None:
+    db = DataBase(DB_URL)
+
+    counts = await db.get_counts()
+    counts = counts.nlargest(20, "count")
 
     PictureGenerator.generate_histogram_picture(
-        repo_list, "name", "count", "histogram_picture", "language", "count"
+        counts["count"], "histogram_picture", "language", "count"
     )
-    PictureGenerator.generate_pie_picture(repo_list, "Pie_picture", "language")
+    # PictureGenerator.generate_pie_picture(repo_list, "Pie_picture", "language")
+
+    print(await db.min_date())
+    print(await db.max_date())
+    print(counts["count"])
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
