@@ -1,0 +1,6 @@
+DB_URL="sqlite+aiosqlite:///./data.db"
+PATH_TO_TOKENS="github_tokens"
+DEBUG="true"
+MAX_REPOS=1000
+FETCH_YEARS=10
+

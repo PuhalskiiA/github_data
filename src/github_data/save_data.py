@@ -1,6 +1,5 @@
 import logging
 import asyncio
-import sys
 
 import tqdm
 from datetime import datetime
@@ -9,24 +8,10 @@ from dateutil.relativedelta import relativedelta
 from db import DataBase
 from gh_fetcher import GHFetcher, APIRateException
 from token_provider import TokenProvider
+from settings import settings
 
-# Хранилище
-DB_NAME = "data.db"
-DB_URL = f"sqlite+aiosqlite:///./{DB_NAME}"
 
-#
-DEBUG = True
-
-PATH_TO_TOKENS = sys.argv[1]
-
-# Количество репозиториев для обработки
-# 1000 - max
-MAX_REPOS = 1000
-
-TOKEN_PROVIDER = TokenProvider(PATH_TO_TOKENS)
-
-# Выгружить репозитории за последние n лет
-FETCH_YEARS = 10
+TOKEN_PROVIDER = TokenProvider(settings.path_to_tokens)
 
 
 class App:
@@ -37,10 +22,11 @@ class App:
 
     def __get_request_count(self) -> int:
         per_page = self.__fetcher.per_page
-        if MAX_REPOS % per_page == 0:
-            return MAX_REPOS // per_page
+        max_repos = settings.max_repos
+        if max_repos % per_page == 0:
+            return max_repos // per_page
         else:
-            return MAX_REPOS // per_page + 1
+            return max_repos // per_page + 1
 
     @staticmethod
     def __get_query(date: datetime) -> str:
@@ -62,7 +48,7 @@ class App:
     async def fetch_and_save_repos(self) -> None:
         tasks = []
         end_date = datetime.now()
-        current_date = end_date - relativedelta(years=FETCH_YEARS)
+        current_date = end_date - relativedelta(years=settings.fetch_years)
         total_steps = (end_date - current_date).days
         self.__tqdm = tqdm.tqdm(total=total_steps, desc="Fetching")
         while current_date < end_date:
@@ -80,7 +66,7 @@ class App:
                 infos = await self.__fetcher.fetch_repos_page(page, query)
                 await self.__db.add_repo_info(infos)
 
-                if DEBUG:
+                if settings.debug:
                     counter = 1
                     for info in infos:
                         logging.info(f"{page}:{counter} Сохранен репозиторий {info}")
@@ -114,7 +100,7 @@ async def main() -> None:
     )
 
     # Инициализация базы данных
-    db = DataBase(DB_URL)
+    db = DataBase(settings.db_url)
     await db.init()
 
     gh_fetcher = GHFetcher(await TOKEN_PROVIDER.get_token())

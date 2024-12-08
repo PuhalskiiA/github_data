@@ -1,14 +1,12 @@
 from picture_generator import PictureGenerator
-from db import DataBase
 import asyncio
 
-# Хранилище
-DB_NAME = "data.db"
-DB_URL = f"sqlite+aiosqlite:///./{DB_NAME}"
+from settings import settings
+from db import DataBase
 
 
 async def main() -> None:
-    db = DataBase(DB_URL)
+    db = DataBase(settings.db_url)
 
     counts = await db.get_counts()
     counts = counts.nlargest(20, "count")
