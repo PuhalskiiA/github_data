@@ -59,16 +59,8 @@ class PictureGenerator:
     def generate_picture(data: pd.DataFrame, title: str, xlabel: str, ylabel: str):
         langs = data.index.get_level_values(0).unique()
 
-        # columns = data.columns.tolist()
-        # group_col = columns[
-        #     0
-        # ]  # Предполагается, что первый столбец — это группирующий (категории)
-        # x_col = columns[1]  # Второй столбец — это ось X
-        # y_col = columns[2]  # Третий столбец — это ось Y
-
         plt.figure(figsize=(10, 6), dpi=80)
 
-        # grouped = data.groupby(group_col)
         for lang in langs:
             lang_data = data.loc[lang]
             plt.plot(lang_data.index, lang_data, label=lang)
@@ -76,7 +68,7 @@ class PictureGenerator:
         plt.title(title, fontsize=14)
         plt.xlabel(xlabel, fontsize=12)
         plt.ylabel(ylabel, fontsize=12)
-        # plt.legend(title=group_col, fontsize=12)
+        plt.legend(title="languages", fontsize=12)
         plt.grid(True)
 
         plt.savefig(f"{title}.png")
