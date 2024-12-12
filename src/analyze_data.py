@@ -9,6 +9,49 @@ from db import DataBase
 from picture_generator import PictureGenerator
 
 
+async def plot_hist(
+    db: DataBase,
+    max_date: datetime,
+    counts_all: pd.DataFrame,
+    counts_last_year: pd.DataFrame,
+) -> None:
+    counts_all_top_10 = counts_all.nlargest(10, "count")
+    counts_all_top_20 = counts_all.nlargest(20, "count")
+    PictureGenerator.generate_histogram_picture(
+        counts_all_top_10["count"], "Репозитории за 10 лет (10 языков)"
+    )
+    PictureGenerator.generate_histogram_picture(
+        counts_all_top_20["count"], "Репозитории за 10 лет (20 языков)"
+    )
+
+    counts_last_year_top_10 = counts_last_year.nlargest(10, "count")
+    counts_last_year_top_20 = counts_last_year.nlargest(20, "count")
+    PictureGenerator.generate_histogram_picture(
+        counts_last_year_top_10["count"],
+        "Репозитории за последний год (10 языков)",
+    )
+    PictureGenerator.generate_histogram_picture(
+        counts_last_year_top_20["count"],
+        "Репозитории за последний год (20 языков)",
+    )
+
+
+async def plot_pie(
+    db: DataBase,
+    max_date: datetime,
+    counts_all: pd.DataFrame,
+    counts_last_year: pd.DataFrame,
+) -> None:
+    counts_all_top_10 = counts_all.nlargest(10, "count")
+    PictureGenerator.generate_pie_picture(
+        counts_all_top_10["count"], "Репозитории за 10 лет (10 языков)"
+    )
+    counts_last_year_top_10 = counts_last_year.nlargest(10, "count")
+    PictureGenerator.generate_pie_picture(
+        counts_last_year_top_10["count"], "Репозитории за последний год (10 языков)"
+    )
+
+
 async def plot_lines(
     db: DataBase, max_date: datetime, counts_last_year: pd.DataFrame
 ) -> None:
@@ -42,32 +85,13 @@ async def main() -> None:
     db = DataBase(settings.db_url)
 
     counts_all = await db.get_counts()
-    counts_all_top_10 = counts_all.nlargest(10, "count")
-
-    PictureGenerator.generate_histogram_picture(
-        counts_all_top_10["count"], "histogram_picture_10_years", "language", "count"
-    )
-    PictureGenerator.generate_pie_picture(
-        counts_all_top_10["count"], "pie_picture_10_years", "language"
-    )
-
     max_date = await db.max_date()
     counts_last_year = await db.get_counts(
         date_from=max_date - relativedelta(years=1), date_to=max_date
     )
-    counts_last_year_top_10 = counts_last_year.nlargest(10, "count")
-    PictureGenerator.generate_histogram_picture(
-        counts_last_year_top_10["count"],
-        "histogram_picture_last_year",
-        "language",
-        "count",
-    )
-    PictureGenerator.generate_pie_picture(
-        counts_last_year_top_10["count"], "pie_picture_last_year", "language"
-    )
-    langs = counts_last_year_top_10.index
-    print(langs)
 
+    await plot_hist(db, max_date, counts_all, counts_last_year)
+    await plot_pie(db, max_date, counts_all, counts_last_year)
     await plot_lines(db, max_date, counts_last_year)
 
 
