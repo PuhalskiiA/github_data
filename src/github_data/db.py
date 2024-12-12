@@ -36,7 +36,9 @@ class DataBase:
             async with session.begin():
                 s = select(func.max(RepoInfo.created_at))
                 res = await session.execute(s)
-                return res.scalar()
+                d = res.scalar()
+                pd_d = pd.Timestamp(d)
+                return pd_d - pd.offsets.MonthBegin(1)
 
     async def min_date(self) -> datetime:
         async with self.session() as session:

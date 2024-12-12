@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 
 from matplotlib import pyplot as plt
+from matplotlib import dates as mdates
+from matplotlib.ticker import MaxNLocator
 
 
 class PictureGenerator:
@@ -56,19 +58,20 @@ class PictureGenerator:
         plt.savefig(f"{title}.png")
 
     @staticmethod
-    def generate_picture(data: pd.DataFrame, title: str, xlabel: str, ylabel: str):
+    def generate_picture(data: pd.DataFrame, title: str):
         langs = data.index.get_level_values(0).unique()
 
-        plt.figure(figsize=(10, 6), dpi=80)
+        fig, ax = plt.subplots(figsize=(10, 6), dpi=300)
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=10))
 
         for lang in langs:
             lang_data = data.loc[lang]
-            plt.plot(lang_data.index, lang_data, label=lang)
+            plt.plot(lang_data.index[:-1], lang_data[:-1], label=lang)
 
         plt.title(title, fontsize=14)
-        plt.xlabel(xlabel, fontsize=12)
-        plt.ylabel(ylabel, fontsize=12)
-        plt.legend(title="languages", fontsize=12)
+        plt.xlabel("Время", fontsize=12)
+        plt.ylabel("Количество", fontsize=12)
+        plt.legend(title="Языки", fontsize=12)
         plt.grid(True)
 
         plt.savefig(f"{title}.png")
