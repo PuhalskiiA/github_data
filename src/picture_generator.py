@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 
 from matplotlib import pyplot as plt
-from matplotlib import dates as mdates
 from matplotlib.ticker import MaxNLocator
 
 
