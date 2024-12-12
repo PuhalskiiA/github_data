@@ -1,0 +1,8 @@
+# Путь к файлу базы данных относительно директории src
+DB_URL="sqlite+aiosqlite:///./data.db"
+# Путь к файлу с токенами относительно директории src
+PATH_TO_TOKENS="github_tokens"
+DEBUG="true"
+MAX_REPOS=1000
+FETCH_YEARS=10
+
